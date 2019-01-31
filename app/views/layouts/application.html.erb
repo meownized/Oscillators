@@ -10,7 +10,7 @@
     <%= javascript_pack_tag    'oscillators_pack' %>
   </head>
 
-  <body data-props="<%= Oscillator.all.as_json(only: [:id, :title, :frequency, :wave]).to_json %>">
+  <body data-props="<%= Oscillator.all.as_json(only: [:id, :title, :frequency, :wave, :detune]).to_json %>">
     <%= yield %>
   </body>
 

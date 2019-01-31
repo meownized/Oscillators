@@ -2,6 +2,7 @@ import React from 'react'
 import $ from 'jquery'
 
 import Oscillator from '../components/Oscillator'
+import ToggleSwitch from '../components/ToggleSwitch'
 
 export default class Oscillators extends React.Component {
   constructor(props) {
@@ -15,17 +16,32 @@ export default class Oscillators extends React.Component {
     })
 
     this.state = {
+      playing: false,
       oscillators: oscillators
     }
 
-    this.handlePlayOrStopClick = this.handlePlayOrStopClick.bind(this)
-    this.handleFrequencyChange = this.handleFrequencyChange.bind(this)
-    this.handleWaveChange      = this.handleWaveChange.bind(this)
-    this.handleMouseUp         = this.handleMouseUp.bind(this)
+    this.handlePlayOrStopClick       = this.handlePlayOrStopClick.bind(this)
+    this.handleFrequencyChange       = this.handleFrequencyChange.bind(this)
+    this.handlePlayOrStopAllClick    = this.handlePlayOrStopAllClick.bind(this)
+    this.handleWaveChange            = this.handleWaveChange.bind(this)
+    this.handleDetuneChange          = this.handleDetuneChange.bind(this)
+    this.handleMouseUp               = this.handleMouseUp.bind(this)
+    this.isPlaying                   = this.isPlaying.bind(this)
+  }
+
+  isPlaying(oscillators) {
+    let playing = false
+
+    oscillators.map ((oscillator, i) => {
+      if (oscillator.playing) {
+        playing = true
+      }
+    })
+    return playing
   }
 
   handlePlayOrStopClick(index) {
-    let { oscillators } = this.state
+    let { playing, oscillators } = this.state
 
     oscillators.map ((oscillator, i) => {
       if (index == i) {
@@ -33,24 +49,28 @@ export default class Oscillators extends React.Component {
       }
     })
 
+    playing = this.isPlaying(oscillators)
+
     this.setState({
+      playing: playing,
       oscillators: oscillators
     })
   }
 
-  handleFrequencyChange(index, value) {
+  handlePlayOrStopAllClick() {
+    const { playing }  = this.state
     let { oscillators } = this.state
 
     oscillators.map ((oscillator, i) => {
-      if (index == i) {
-        oscillator.frequency = value
-      }
+        oscillator.playing = !playing
     })
 
     this.setState({
+      playing: !playing,
       oscillators: oscillators
     })
   }
+
 
   handleWaveChange(index, value) {
     let { oscillators } = this.state
@@ -68,9 +88,37 @@ export default class Oscillators extends React.Component {
     this.updateOscillator(index, "wave", value)
   }
 
-  handleMouseUp(index) {
-    const frequency = this.state.oscillators[index].frequency
-    this.updateOscillator(index, "frequency", frequency)
+  handleFrequencyChange(index, value) {
+    let { oscillators } = this.state
+
+    oscillators.map ((oscillator, i) => {
+      if (index == i) {
+        oscillator.frequency = value
+      }
+    })
+
+    this.setState({
+      oscillators: oscillators
+    })
+  }
+
+  handleDetuneChange(index, value) {
+    let { oscillators } = this.state
+
+    oscillators.map ((oscillator, i) => {
+      if (index == i) {
+        oscillator.detune = value
+      }
+    })
+
+    this.setState({
+      oscillators: oscillators
+    })
+  }
+
+  handleMouseUp(index, paramName) {
+    const value = this.state.oscillators[index][`${paramName}`]
+    this.updateOscillator(index, paramName, value)
   }
 
   updateOscillator(index, paramName, value) {
@@ -82,30 +130,23 @@ export default class Oscillators extends React.Component {
         const { id } = oscillator
 
         $.ajax({
-            dataType: "json",
-            method: "POST",
-            url: "/oscillators/tune",
-            data: { id: id, param_name: paramName, value: value }
-          })
-          .done(function() {
-            console.log("success")
-          })
-          .fail(function(jqXHR, textStatus) {
-            console.log("error")
-          })
-          .always(function() {
-            console.log("complete")
-          })
+          dataType: "json",
+          method: "POST",
+          url: "/oscillators/tune",
+          data: { id: id, param_name: paramName, value: value }
+        }).done(function() {
+          console.log("success")
+        }).fail(function(jqXHR, textStatus) {
+          console.log("error")
+        }).always(function() {
+          console.log("complete")
+        })
       }
     })
-
-    // this.setState({
-    //   oscillators: oscillators
-    // })
   }
 
   render() {
-    const { oscillators } = this.state
+    const { playing, oscillators } = this.state
     let oscillatorElements = []
 
     oscillators.map((oscillator, i) => {
@@ -116,6 +157,7 @@ export default class Oscillators extends React.Component {
           handlePlayOrStopClick={ this.handlePlayOrStopClick }
           handleFrequencyChange={ this.handleFrequencyChange }
           handleWaveChange={ this.handleWaveChange }
+          handleDetuneChange={ this.handleDetuneChange }
           index= { i }
           key={ i }
         />
@@ -124,6 +166,12 @@ export default class Oscillators extends React.Component {
 
     return (
       <div className="Oscillators">
+      <ToggleSwitch
+        name="play"
+        value={ playing }
+        handleToggleClick={ this.handlePlayOrStopAllClick }
+      />
+
         { oscillatorElements }
       </div>
     )

@@ -3,6 +3,7 @@ import React from 'react'
 import WaveButton from '../components/WaveButton'
 import Knob from '../components/Knob'
 import Slider from '../components/Slider'
+import ToggleSwitch from '../components/ToggleSwitch'
 
 export default class Oscillator extends React.Component {
   constructor(props) {
@@ -14,12 +15,13 @@ export default class Oscillator extends React.Component {
 
     this.state = {
       audioContext: audioContext,
-      oscillator: oscillator
+      oscillator: oscillator,
+      playing: false
     }
 
-    this.handlePlayClick       = this.handlePlayClick.bind(this)
-    this.handleStopClick       = this.handleStopClick.bind(this)
+    this.handlePlayOrStopClick = this.handlePlayOrStopClick.bind(this)
     this.changeFrequency       = this.changeFrequency.bind(this)
+    this.handleDetuneChange    = this.handleDetuneChange.bind(this)
     this.changeWave            = this.changeWave.bind(this)
     this.handleFrequencyChange = this.handleFrequencyChange.bind(this)
     this.handleWaveChange      = this.handleWaveChange.bind(this)
@@ -27,33 +29,42 @@ export default class Oscillator extends React.Component {
   }
 
   componentDidUpdate() {
+    const { playing } = this.props
+
     this.changeFrequency()
+    this.changeDetune()
     this.changeWave()
+
+    if (playing && !this.state.playing) {
+      this.startOscillator()
+    } else if (!playing && this.state.playing) {
+      this.stopOscillator()
+    }
   }
 
-  handlePlayClick() {
-    this.startOscillator()
-    this.props.handlePlayOrStopClick(this.props.index)
-  }
-
-  handleStopClick() {
-    this.stopOscillator()
-    this.props.handlePlayOrStopClick(this.props.index)
+  handlePlayOrStopClick() {
+    const { index, handlePlayOrStopClick } = this.props
+    handlePlayOrStopClick(index)
   }
 
   handleFrequencyChange(value) {
-    const { index } = this.props
-    this.props.handleFrequencyChange(index, value)
+    const { index, handleFrequencyChange } = this.props
+    handleFrequencyChange(index, value)
   }
 
   handleWaveChange(value) {
-    const { index } = this.props
-    this.props.handleWaveChange(index, value)
+    const { index, handleWaveChange } = this.props
+    handleWaveChange(index, value)
   }
 
-  handleMouseUp() {
-    const { index } = this.props
-    this.props.handleMouseUp(index)
+  handleDetuneChange(value) {
+    const { index, handleDetuneChange } = this.props
+    handleDetuneChange(index, value)
+  }
+
+  handleMouseUp(paramName) {
+    const { index, handleMouseUp } = this.props
+    handleMouseUp(index, paramName)
   }
 
   startOscillator() {
@@ -68,13 +79,18 @@ export default class Oscillator extends React.Component {
     oscillator.start()
 
     this.setState({
-      oscillator: oscillator
+      oscillator: oscillator,
+      playing: true
     })
   }
 
   stopOscillator() {
     let { oscillator } = this.state
     oscillator.stop()
+
+    this.setState({
+      playing: false
+    })
   }
 
   changeFrequency() {
@@ -83,27 +99,30 @@ export default class Oscillator extends React.Component {
     oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime)
   }
 
+  changeDetune() {
+    const { detune } = this.props
+    const { audioContext, oscillator } = this.state
+    oscillator.detune.setValueAtTime(detune, audioContext.currentTime)
+  }
+
   changeWave() {
     const { wave } = this.props
     const { audioContext, oscillator } = this.state
     oscillator.type = wave
   }
 
-  renderPlayButton() {
-    return <div className="play" onClick={ this.handlePlayClick } />
-  }
-
-  renderStopButton() {
-    return <div className="stop" onClick={ this.handleStopClick } />
-  }
-
   render() {
-    const { title, wave, frequency, playing } = this.props
+    const { title, wave, frequency, detune, playing } = this.props
 
     return(
       <div className="Oscillator">
         <h1>{ title }</h1>
-        { playing ? this.renderStopButton() : this.renderPlayButton() }
+
+        <ToggleSwitch
+          name="play"
+          value={ playing }
+          handleToggleClick={ this.handlePlayOrStopClick }
+        />
 
         <WaveButton
           current={ wave }
@@ -130,16 +149,21 @@ export default class Oscillator extends React.Component {
         />
 
         <Knob
-        min = "-100"
-        max = "100"
+          name="detune"
+          min = "-100"
+          max = "100"
+          value = { detune }
+          handleValueChange={ this.handleDetuneChange }
+          handleMouseUp={ this.handleMouseUp }
         />
 
         <Slider
+          name="frequency"
           min="0"
           max="1000"
           value={ frequency }
           handleValueChange={ this.handleFrequencyChange }
-          handleMouseUp={ this.handleMouseUp}
+          handleMouseUp={ this.handleMouseUp }
         />
 
         <div className="result">

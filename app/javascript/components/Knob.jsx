@@ -6,7 +6,7 @@ export default class Knob extends React.Component {
 
     this.state = {
       mouseDown: false,
-      value: 0,
+      value: props.value,
       deg: -90,
       screenY: 0
     }
@@ -19,12 +19,21 @@ export default class Knob extends React.Component {
   }
 
   componentDidMount() {
+    const { value } = this.props
+    const deg = this.calculateDeg(value)
+
+    this.setState({
+      mouseDown: false,
+      value: value,
+      deg: -90 + deg,
+      screenY: 0
+    })
+
     document.addEventListener("mouseup",   this.handleMouseUp)
     document.addEventListener("mousemove", this.handleMouseMove)
   }
 
   handleMouseDown(e) {
-    console.log("Mouse Down")
     e.preventDefault()
 
     this.setState({
@@ -34,8 +43,6 @@ export default class Knob extends React.Component {
   }
 
   handleMouseMove(e) {
-    console.log("Mouse Move")
-
     const { mouseDown } = this.state
 
     if (mouseDown) {
@@ -44,8 +51,10 @@ export default class Knob extends React.Component {
   }
 
   handleMouseUp() {
+    const { name, handleMouseUp } = this.props
+
     if (this.state.mouseDown) {
-      // this.props.handleMouseUp()
+      handleMouseUp(name)
 
       this.setState({
         mouseDown: false
@@ -68,6 +77,8 @@ export default class Knob extends React.Component {
     } else if (value > max) {
       value = max
     }
+
+    this.props.handleValueChange(value)
 
     this.setState({
       screenY: screenY,
